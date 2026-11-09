@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#245b78">
+<meta name="description" content="Gestão diária e semanal de tarefas administrativas.">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Minha Checklist</title>
+<style>
+:root{--blue:#245b78;--green:#26966b;--bg:#f3f5f7;--muted:#687782;--red:#a94442}
+*{box-sizing:border-box}body{font-family:Arial,sans-serif;background:var(--bg);color:#263238;margin:0;padding:18px 14px 40px}
+main{max-width:850px;margin:auto}.top{text-align:center;padding:12px 0 18px}.top h1{margin:5px;color:var(--blue);font-size:27px}.top p{color:var(--muted);margin:6px}
+.card{background:#fff;border-radius:16px;padding:20px;margin:16px 0;box-shadow:0 3px 14px #0000000d}
+h2{color:var(--blue);margin:0 0 14px;font-size:22px}h3{font-size:16px;color:var(--blue);border-bottom:1px solid #e5e9ec;padding:14px 0 9px;margin:15px 0 5px}
+.task{display:flex;align-items:flex-start;gap:11px;padding:10px 2px;border-bottom:1px solid #f0f1f2;line-height:1.4;cursor:pointer}
+.task input{width:20px;height:20px;accent-color:var(--green);flex-shrink:0;margin:0}
+.task input:checked+span{text-decoration:line-through;color:#89949b}
+.progress{height:10px;background:#e5e7eb;border-radius:20px;overflow:hidden;margin:16px 0 8px}.bar{height:100%;width:0;background:var(--green);transition:width .2s}
+.progress-label{font-size:14px;color:#46545c;margin:0 0 14px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:15px}
+button{border:0;border-radius:9px;padding:11px 14px;background:var(--blue);color:#fff;font-weight:600;font-size:14px;cursor:pointer}
+button.secondary{background:#687782}button.danger{background:var(--red)}button.light{background:#e9eff2;color:var(--blue)}
+.report{display:none;white-space:pre-wrap;line-height:1.55;background:#f0f4f6;padding:14px;border-radius:9px;margin-top:15px;font-size:14px}
+.note{font-size:12px;color:var(--muted)}.history-item{background:#f0f4f6;border-radius:10px;padding:13px;margin:9px 0}.history-item p{font-size:13px;color:var(--muted);margin:6px 0 10px}
+.tabs{display:flex;gap:8px;margin:0 0 15px}.tabs button{flex:1}.tabs button.active{background:#163f55}
+.hidden{display:none!important}
+@media(min-width:650px){body{padding:28px}.card{padding:25px}}
+@media print{body{background:white}.actions,.tabs,#historyCard,.top .note{display:none!important}.card{box-shadow:none;border:1px solid #ddd;break-inside:avoid}}
+</style>
+</head>
+<body>
+<main>
+<header class="top">
+  <h1>Minha Checklist</h1>
+  <p>Gestão diária e semanal de tarefas administrativas</p>
+  <p class="note" id="today"></p>
+</header>
+
+<div class="tabs">
+  <button id="tabDaily" class="active" onclick="showTab('daily')">Diária</button>
+  <button id="tabWeekly" class="light" onclick="showTab('weekly')">Semanal</button>
+  <button id="tabHistory" class="light" onclick="showTab('history')">Relatórios</button>
+</div>
+
+<section id="dailyView" class="view">
+ <div class="card">
+  <h2>Checklist diária</h2>
+  <div id="dailyTasks"></div>
+  <div class="progress"><div class="bar" id="dailyBar"></div></div>
+  <p class="progress-label" id="dailyProgress">0% concluído</p>
+  <div class="actions">
+   <button onclick="generateReport('daily')">Gerar relatório diário</button>
+   <button class="secondary" onclick="printCurrent('daily')">Imprimir / PDF</button>
+   <button class="danger" onclick="resetList('daily')">Reiniciar dia</button>
+  </div>
+  <div class="report" id="dailyReport"></div>
+ </div>
+</section>
+
+<section id="weeklyView" class="view hidden">
+ <div class="card">
+  <h2>Checklist semanal</h2>
+  <p class="note">Assinala as tarefas fixas à medida que forem concluídas durante a semana.</p>
+  <div id="weeklyTasks"></div>
+  <div class="progress"><div class="bar" id="weeklyBar"></div></div>
+  <p class="progress-label" id="weeklyProgress">0% concluído</p>
+  <div class="actions">
+   <button onclick="generateReport('weekly')">Gerar relatório semanal</button>
+   <button class="secondary" onclick="printCurrent('weekly')">Imprimir / PDF</button>
+   <button class="danger" onclick="resetList('weekly')">Reiniciar semana</button>
+  </div>
+  <div class="report" id="weeklyReport"></div>
+ </div>
+</section>
+
+<section id="historyView" class="view hidden">
+ <div class="card" id="historyCard">
+  <h2>Histórico de relatórios</h2>
+  <p class="note">Os relatórios ficam guardados neste dispositivo e neste navegador.</p>
+  <div id="history"></div>
+  <div class="actions"><button class="secondary" onclick="exportHistory()">Exportar histórico</button></div>
+ </div>
+</section>
+<p class="note" style="text-align:center">Os dados são guardados localmente neste dispositivo. Faz uma exportação periódica do histórico para teres uma cópia de segurança.</p>
+</main>
+
+<script>
+const DAILY=[
+ {title:"08h00 – 09h00 | Organização do dia",tasks:["Organizar tarefas e prioridades","Consultar emails","Imprimir faturas","Preparar pedidos de orçamento","Verificar assuntos pendentes"]},
+ {title:"09h00 – 13h00 | Atendimento e tarefas administrativas",tasks:["Atendimento ao balcão","Atendimento telefónico","Responder a emails","Dar seguimento a pedidos de orçamento","Outras tarefas administrativas"]},
+ {title:"14h00 – 15h00 | Atendimento e encomendas",tasks:["Atendimento ao balcão","Atendimento telefónico","Verificar encomendas prontas","Avisar clientes para levantamento"]},
+ {title:"15h00 – 17h00 | Atendimento, lançamentos e arquivo",tasks:["Atendimento ao balcão","Atendimento telefónico","Lançamento de faturas de fornecedores","Arquivo físico","Arquivo digital","Organizar documentos pendentes","Preparar tarefas para o dia seguinte"]}
+];
+const WEEKLY=["Arquivo físico atualizado","Arquivo digital atualizado","Faturas de fornecedores lançadas","Pedidos de orçamento acompanhados","Emails e assuntos pendentes tratados","Clientes avisados das encomendas prontas"];
+const STATE_KEY="minhaChecklistState_v1",HISTORY_KEY="minhaChecklistHistory_v1";
+let state=loadState();
+function loadState(){try{return JSON.parse(localStorage.getItem(STATE_KEY))||{daily:{},weekly:{},dayKey:dayKey(),weekKey:weekKey()}}catch(e){return {daily:{},weekly:{},dayKey:dayKey(),weekKey:weekKey()}}}
+function dayKey(){return new Date().toLocaleDateString("en-CA")}
+function weekKey(){const d=new Date();const x=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const day=x.getUTCDay()||7;x.setUTCDate(x.getUTCDate()+4-day);const year=x.getUTCFullYear();const start=new Date(Date.UTC(year,0,1));return year+"-S"+String(Math.ceil((((x-start)/86400000)+1)/7)).padStart(2,"0")}
+function persist(){localStorage.setItem(STATE_KEY,JSON.stringify(state))}
+function makeTask(text,key,type){const label=document.createElement("label");label.className="task";const input=document.createElement("input");input.type="checkbox";input.checked=!!state[type][key];input.addEventListener("change",()=>{state[type][key]=input.checked;persist();updateProgress(type)});const span=document.createElement("span");span.textContent=text;label.append(input,span);return label}
+function render(){const d=document.getElementById("dailyTasks");d.innerHTML="";DAILY.forEach((group,i)=>{const h=document.createElement("h3");h.textContent=group.title;d.append(h);group.tasks.forEach((t,j)=>d.append(makeTask(t,`${i}-${j}`,"daily")))});const w=document.getElementById("weeklyTasks");w.innerHTML="";WEEKLY.forEach((t,i)=>w.append(makeTask(t,String(i),"weekly")));updateProgress("daily");updateProgress("weekly")}
+function taskList(type){if(type==="weekly")return WEEKLY.map((name,i)=>({name,done:!!state.weekly[i]}));return DAILY.flatMap((g,i)=>g.tasks.map((name,j)=>({name,group:g.title,done:!!state.daily[`${i}-${j}`]})))}
+function updateProgress(type){const list=taskList(type),done=list.filter(x=>x.done).length,p=Math.round(done/list.length*100);document.getElementById(type+"Bar").style.width=p+"%";document.getElementById(type+"Progress").textContent=`${done} de ${list.length} tarefas concluídas (${p}%)`}
+function getHistory(){try{return JSON.parse(localStorage.getItem(HISTORY_KEY))||[]}catch(e){return []}}
+function generateReport(type){const list=taskList(type),done=list.filter(x=>x.done),pending=list.filter(x=>!x.done),p=Math.round(done.length/list.length*100),now=new Date();const report=`RELATÓRIO ${type==="daily"?"DIÁRIO":"SEMANAL"}\nData: ${now.toLocaleDateString("pt-PT")}\nHora: ${now.toLocaleTimeString("pt-PT")}\n\nRESUMO\nTotal: ${list.length}\nConcluídas: ${done.length}\nPendentes: ${pending.length}\nExecução: ${p}%\n\nTAREFAS CONCLUÍDAS\n${done.length?done.map(x=>"✓ "+x.name).join("\n"):"Nenhuma tarefa assinalada."}\n\nTAREFAS PENDENTES\n${pending.length?pending.map(x=>"• "+x.name).join("\n"):"Todas as tarefas foram concluídas."}\n\nOBSERVAÇÕES\n________________________________\n`;
+const entry={id:Date.now(),type,date:now.toISOString(),percent:p,report};const history=getHistory();history.unshift(entry);localStorage.setItem(HISTORY_KEY,JSON.stringify(history));const box=document.getElementById(type+"Report");box.textContent=report;box.style.display="block";renderHistory();return entry}
+function resetList(type){if(!confirm(`Queres reiniciar a checklist ${type==="daily"?"diária":"semanal"}?`))return;state[type]={};persist();document.getElementById(type+"Report").style.display="none";render()}
+function printCurrent(type){const box=document.getElementById(type+"Report");if(!box.textContent){alert("Gera primeiro o relatório.");return}const w=window.open("","_blank");if(!w){alert("O navegador bloqueou a janela de impressão. Permite janelas de pop-up.");return}const pre=document.createElement("pre");pre.textContent=box.textContent;pre.style.cssText="white-space:pre-wrap;font:14px Arial;line-height:1.6;padding:25px";w.document.body.append(pre);w.document.title="Relatório";w.print()}
+function renderHistory(){const area=document.getElementById("history");area.innerHTML="";const items=getHistory();if(!items.length){area.textContent="Ainda não existem relatórios guardados.";return}items.forEach(item=>{const card=document.createElement("div");card.className="history-item";const title=document.createElement("strong");title.textContent=(item.type==="daily"?"Relatório diário":"Relatório semanal")+" — "+new Date(item.date).toLocaleString("pt-PT");const p=document.createElement("p");p.textContent=item.percent+"% concluído";const view=document.createElement("button");view.className="secondary";view.textContent="Consultar";view.onclick=()=>{showTab(item.type);const box=document.getElementById(item.type+"Report");box.textContent=item.report;box.style.display="block";box.scrollIntoView({behavior:"smooth"})};card.append(title,p,view);area.append(card)})}
+function exportHistory(){const blob=new Blob([JSON.stringify(getHistory(),null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="historico_checklist.json";a.click();URL.revokeObjectURL(url)}
+function showTab(tab){["daily","weekly","history"].forEach(x=>{document.getElementById(x+"View").classList.toggle("hidden",x!==tab);document.getElementById("tab"+x[0].toUpperCase()+x.slice(1)).classList.toggle("active",x===tab);document.getElementById("tab"+x[0].toUpperCase()+x.slice(1)).classList.toggle("light",x!==tab)});if(tab==="history")renderHistory()}
+function checkPeriod(){const d=dayKey(),w=weekKey();if(state.dayKey!==d){state.daily={};state.dayKey=d}if(state.weekKey!==w){state.weekly={};state.weekKey=w}persist()}
+document.getElementById("today").textContent=new Date().toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+checkPeriod();render();renderHistory();
+if("serviceWorker" in navigator && location.protocol!=="file:"){navigator.serviceWorker.register("./sw.js").catch(()=>{});}
+</script>
+</body>
+</html>

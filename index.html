@@ -1,0 +1,720 @@
+
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#263b53">
+<title>Checklist de Trabalho</title>
+
+<style>
+:root {
+  --azul: #263b53;
+  --azul-claro: #eaf0f6;
+  --fundo: #f3f5f8;
+  --verde: #25845d;
+  --vermelho: #b94a48;
+  --cinza: #687586;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 16px;
+  background: var(--fundo);
+  color: #263343;
+  font-family: Arial, sans-serif;
+}
+
+main {
+  max-width: 900px;
+  margin: auto;
+}
+
+header {
+  background: var(--azul);
+  color: white;
+  padding: 22px;
+  border-radius: 14px;
+  margin-bottom: 18px;
+}
+
+header h1 { margin: 0 0 8px; }
+header p { margin: 0; opacity: .85; }
+
+section, .painel {
+  background: white;
+  padding: 18px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px #0000000b;
+}
+
+h2 {
+  font-size: 19px;
+  margin-top: 0;
+  color: var(--azul);
+}
+
+h3 {
+  font-size: 16px;
+  color: var(--azul);
+  margin-bottom: 10px;
+}
+
+.data {
+  color: var(--cinza);
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.progresso {
+  background: #e3e8ee;
+  height: 12px;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.progresso div {
+  height: 100%;
+  width: 0;
+  background: var(--verde);
+  transition: width .2s;
+}
+
+.tarefa {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 4px;
+  border-bottom: 1px solid #edf0f3;
+}
+
+.tarefa:last-child { border-bottom: 0; }
+
+.tarefa input {
+  width: 19px;
+  height: 19px;
+  margin-top: 1px;
+  accent-color: var(--verde);
+}
+
+.tarefa label {
+  flex: 1;
+  line-height: 1.4;
+}
+
+.tarefa.concluida label {
+  text-decoration: line-through;
+  color: #89939f;
+}
+
+.transitada {
+  display: inline-block;
+  font-size: 10px;
+  color: #875c16;
+  background: #fff0cc;
+  padding: 3px 6px;
+  border-radius: 5px;
+  margin-left: 5px;
+}
+
+input[type="text"], textarea {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid #ccd4dd;
+  border-radius: 7px;
+  font: inherit;
+  margin: 6px 0 10px;
+}
+
+textarea { min-height: 85px; resize: vertical; }
+
+button {
+  border: 0;
+  padding: 11px 15px;
+  border-radius: 7px;
+  background: var(--azul);
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  margin: 4px 3px 4px 0;
+}
+
+button.secundario { background: #647487; }
+button.verde { background: var(--verde); }
+button.perigo { background: var(--vermelho); }
+button.pequeno { padding: 6px 9px; font-size: 12px; }
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.relatorio {
+  border: 1px solid #dce3ea;
+  border-radius: 8px;
+  padding: 14px;
+  margin-top: 12px;
+  white-space: normal;
+}
+
+.relatorio p { line-height: 1.5; }
+
+.item-historico {
+  border-bottom: 1px solid #e8edf2;
+  padding: 12px 0;
+}
+
+.item-historico:last-child { border: 0; }
+
+.vazio {
+  color: var(--cinza);
+  font-size: 14px;
+}
+
+@media print {
+  body { background: white; padding: 0; }
+  header, .nao-imprimir, #checklist, #semanal,
+  #adicionar, #historico { display: none !important; }
+  section, .painel { box-shadow: none; }
+  #areaRelatorio { display: block !important; }
+}
+</style>
+</head>
+
+<body>
+<main>
+
+<header>
+  <h1>Checklist de Trabalho</h1>
+  <p>Organização diária e semanal</p>
+</header>
+
+<section>
+  <h2>O meu dia</h2>
+  <div class="data" id="dataAtual"></div>
+  <div id="resumoProgresso"></div>
+  <div class="progresso"><div id="barraProgresso"></div></div>
+</section>
+
+<section id="checklist">
+  <h2>Checklist diária</h2>
+  <div id="listaDiaria"></div>
+</section>
+
+<section id="adicionar">
+  <h2>Adicionar tarefa</h2>
+  <input id="novaTarefa" type="text"
+         placeholder="Escreve uma nova tarefa...">
+  <button onclick="adicionarTarefa()">Adicionar tarefa</button>
+</section>
+
+<section id="semanal">
+  <h2>Checklist semanal</h2>
+  <p class="vazio">Tarefas a realizar ao longo da semana.</p>
+  <div id="listaSemanal"></div>
+  <input id="novaSemanal" type="text"
+         placeholder="Adicionar tarefa semanal...">
+  <button onclick="adicionarSemanal()">Adicionar à semana</button>
+</section>
+
+<section>
+  <h2>Observações do dia</h2>
+  <textarea id="observacoes"
+    placeholder="Regista aqui ocorrências, informações importantes ou assuntos do dia..."
+    oninput="guardarObservacoes()"></textarea>
+</section>
+
+<section>
+  <h2>Assuntos a acompanhar no dia seguinte</h2>
+  <textarea id="acompanhar"
+    placeholder="Regista assuntos que precisam de acompanhamento amanhã..."
+    oninput="guardarObservacoes()"></textarea>
+</section>
+
+<section class="nao-imprimir">
+  <h2>Relatório diário</h2>
+  <p class="vazio">
+    Gera o relatório para guardar o resumo do dia no histórico.
+  </p>
+  <div class="acoes">
+    <button class="verde" onclick="gerarRelatorio()">
+      Gerar relatório
+    </button>
+    <button class="secundario" onclick="limparRelatorioApresentado()">
+      Limpar relatório apresentado
+    </button>
+    <button onclick="window.print()">Imprimir / Guardar PDF</button>
+  </div>
+</section>
+
+<section id="areaRelatorio">
+  <h2>Relatório apresentado</h2>
+  <div id="relatorioAtual" class="relatorio">
+    <p class="vazio">Ainda não foi gerado nenhum relatório.</p>
+  </div>
+</section>
+
+<section id="historico" class="nao-imprimir">
+  <h2>Histórico de relatórios</h2>
+  <div id="listaHistorico"></div>
+</section>
+
+<section class="nao-imprimir">
+  <h2>Dados da aplicação</h2>
+  <p class="vazio">
+    Os dados ficam guardados neste dispositivo e neste navegador.
+    Recomenda-se fazer cópias de segurança regularmente.
+  </p>
+  <button class="secundario" onclick="exportarDados()">
+    Exportar cópia de segurança
+  </button>
+  <button class="secundario" onclick="importarDados()">
+    Importar cópia de segurança
+  </button>
+  <input type="file" id="ficheiroImportar"
+         accept=".json,application/json" hidden
+         onchange="lerImportacao(event)">
+</section>
+
+</main>
+
+<script>
+const CHAVE = "checklist_trabalho_v3";
+
+const tarefasBase = [
+  { bloco: "08h00 – 09h00 | Organização do dia", texto: "Organizar as tarefas do dia" },
+  { bloco: "08h00 – 09h00 | Organização do dia", texto: "Imprimir faturas" },
+  { bloco: "08h00 – 09h00 | Organização do dia", texto: "Preparar pedidos de orçamento" },
+
+  { bloco: "09h00 – 13h00 | Atendimento e tarefas administrativas", texto: "Atendimento ao balcão e telefone" },
+  { bloco: "09h00 – 13h00 | Atendimento e tarefas administrativas", texto: "Responder a emails" },
+  { bloco: "09h00 – 13h00 | Atendimento e tarefas administrativas", texto: "Realizar tarefas administrativas" },
+
+  { bloco: "14h00 – 15h00 | Atendimento", texto: "Atendimento ao balcão e telefone" },
+  { bloco: "14h00 – 15h00 | Atendimento", texto: "Avisar clientes de encomendas prontas" },
+
+  { bloco: "15h00 – 17h00 | Fecho do dia", texto: "Atendimento ao balcão e telefone" },
+  { bloco: "15h00 – 17h00 | Fecho do dia", texto: "Lançamento de faturas" },
+  { bloco: "15h00 – 17h00 | Fecho do dia", texto: "Arquivo de documentos" }
+];
+
+const tarefasSemanaBase = [
+  "Arquivo físico",
+  "Arquivo digital",
+  "Lançamento de faturas de fornecedores",
+  "Responder a emails pendentes",
+  "Avisar clientes de encomendas prontas"
+];
+
+let dados = carregarDados();
+let dia = hoje();
+
+function hoje() {
+  const d = new Date();
+  return d.getFullYear() + "-" +
+    String(d.getMonth()+1).padStart(2,"0") + "-" +
+    String(d.getDate()).padStart(2,"0");
+}
+
+function segundaDaSemana(data) {
+  const d = new Date(data + "T12:00:00");
+  const diaSemana = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - diaSemana);
+  return d.getFullYear() + "-" +
+    String(d.getMonth()+1).padStart(2,"0") + "-" +
+    String(d.getDate()).padStart(2,"0");
+}
+
+function criarId() {
+  return Date.now().toString(36) +
+    Math.random().toString(36).slice(2,8);
+}
+
+function carregarDados() {
+  try {
+    return JSON.parse(localStorage.getItem(CHAVE)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function guardar() {
+  localStorage.setItem(CHAVE, JSON.stringify(dados));
+}
+
+function tarefasAtivas() {
+  return dados.tarefas || [];
+}
+
+function inicializarDia() {
+  if (!dados.diaAtual) {
+    dados.diaAtual = dia;
+    dados.tarefas = tarefasBase.map(t => ({
+      id: criarId(),
+      texto: t.texto,
+      bloco: t.bloco,
+      concluida: false,
+      transitada: false
+    }));
+  } else if (dados.diaAtual !== dia) {
+    const pendentes = (dados.tarefas || [])
+      .filter(t => !t.concluida)
+      .map(t => ({
+        ...t,
+        id: criarId(),
+        transitada: true,
+        origem: t.origem || dados.diaAtual
+      }));
+
+    const novas = tarefasBase.map(t => ({
+      id: criarId(),
+      texto: t.texto,
+      bloco: t.bloco,
+      concluida: false,
+      transitada: false
+    }));
+
+    dados.tarefas = [...pendentes, ...novas];
+    dados.diaAtual = dia;
+    dados.observacoes = "";
+    dados.acompanhar = "";
+    dados.relatorioApresentado = null;
+  }
+
+  const semana = segundaDaSemana(dia);
+  if (dados.semanaAtual !== semana) {
+    dados.semanaAtual = semana;
+    dados.tarefasSemana = tarefasSemanaBase.map(t => ({
+      id: criarId(),
+      texto: t,
+      concluida: false
+    }));
+  }
+
+  if (!dados.tarefasSemana) {
+    dados.tarefasSemana = tarefasSemanaBase.map(t => ({
+      id: criarId(),
+      texto: t,
+      concluida: false
+    }));
+  }
+
+  guardar();
+}
+
+function apresentarData() {
+  const d = new Date(dia + "T12:00:00");
+  document.getElementById("dataAtual").textContent =
+    d.toLocaleDateString("pt-PT", {
+      weekday: "long", year: "numeric",
+      month: "long", day: "numeric"
+    });
+}
+
+function desenharDiaria() {
+  const zona = document.getElementById("listaDiaria");
+  zona.innerHTML = "";
+
+  const tarefas = tarefasAtivas();
+  const blocos = [...new Set(tarefas.map(t => t.bloco || "Tarefas adicionais"))];
+
+  blocos.forEach(bloco => {
+    const titulo = document.createElement("h3");
+    titulo.textContent = bloco;
+    zona.appendChild(titulo);
+
+    tarefas.filter(t => (t.bloco || "Tarefas adicionais") === bloco)
+      .forEach(t => {
+        const linha = document.createElement("div");
+        linha.className = "tarefa" + (t.concluida ? " concluida" : "");
+
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = !!t.concluida;
+        cb.addEventListener("change", () => {
+          t.concluida = cb.checked;
+          guardar();
+          atualizar();
+        });
+
+        const label = document.createElement("label");
+        label.textContent = t.texto;
+
+        if (t.transitada) {
+          const tag = document.createElement("span");
+          tag.className = "transitada";
+          tag.textContent = "TRANSITADA";
+          label.appendChild(tag);
+        }
+
+        linha.append(cb, label);
+        zona.appendChild(linha);
+      });
+  });
+}
+
+function desenharSemanal() {
+  const zona = document.getElementById("listaSemanal");
+  zona.innerHTML = "";
+
+  dados.tarefasSemana.forEach(t => {
+    const linha = document.createElement("div");
+    linha.className = "tarefa" + (t.concluida ? " concluida" : "");
+
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = !!t.concluida;
+    cb.addEventListener("change", () => {
+      t.concluida = cb.checked;
+      guardar();
+      atualizar();
+    });
+
+    const label = document.createElement("label");
+    label.textContent = t.texto;
+    linha.append(cb, label);
+    zona.appendChild(linha);
+  });
+}
+
+function adicionarTarefa() {
+  const campo = document.getElementById("novaTarefa");
+  const texto = campo.value.trim();
+  if (!texto) return;
+
+  dados.tarefas.push({
+    id: criarId(),
+    texto,
+    bloco: "Tarefas adicionais",
+    concluida: false,
+    transitada: false
+  });
+
+  campo.value = "";
+  guardar();
+  atualizar();
+}
+
+function adicionarSemanal() {
+  const campo = document.getElementById("novaSemanal");
+  const texto = campo.value.trim();
+  if (!texto) return;
+
+  dados.tarefasSemana.push({
+    id: criarId(),
+    texto,
+    concluida: false
+  });
+
+  campo.value = "";
+  guardar();
+  atualizar();
+}
+
+function guardarObservacoes() {
+  dados.observacoes =
+    document.getElementById("observacoes").value;
+  dados.acompanhar =
+    document.getElementById("acompanhar").value;
+  guardar();
+}
+
+function atualizarProgresso() {
+  const tarefas = tarefasAtivas();
+  const total = tarefas.length;
+  const concluidas = tarefas.filter(t => t.concluida).length;
+  const percentagem = total ? Math.round(concluidas / total * 100) : 0;
+
+  document.getElementById("resumoProgresso").textContent =
+    `${concluidas} de ${total} tarefas concluídas (${percentagem}%)`;
+
+  document.getElementById("barraProgresso").style.width =
+    percentagem + "%";
+}
+
+function atualizar() {
+  desenharDiaria();
+  desenharSemanal();
+  atualizarProgresso();
+  desenharHistorico();
+}
+
+function escapar(texto) {
+  return String(texto || "").replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;",
+    '"': "&quot;", "'": "&#39;"
+  })[c]);
+}
+
+function gerarRelatorio() {
+  guardarObservacoes();
+
+  const tarefas = tarefasAtivas();
+  const total = tarefas.length;
+  const concluidas = tarefas.filter(t => t.concluida);
+  const pendentes = tarefas.filter(t => !t.concluida);
+  const transitadas = tarefas.filter(t => t.transitada && !t.concluida);
+
+  const relatorio = {
+    id: criarId(),
+    data: dia,
+    total,
+    concluidas: concluidas.map(t => t.texto),
+    pendentes: pendentes.map(t => t.texto),
+    transitadas: transitadas.map(t => t.texto),
+    observacoes: dados.observacoes || "",
+    acompanhar: dados.acompanhar || ""
+  };
+
+  if (!dados.historico) dados.historico = [];
+
+  dados.historico.unshift(relatorio);
+  dados.relatorioApresentado = relatorio;
+
+  guardar();
+  mostrarRelatorio(relatorio);
+  desenharHistorico();
+}
+
+function mostrarRelatorio(r) {
+  if (!r) {
+    document.getElementById("relatorioAtual").innerHTML =
+      '<p class="vazio">Ainda não foi gerado nenhum relatório.</p>';
+    return;
+  }
+
+  const lista = (itens, vazio) => itens.length
+    ? "<ul>" + itens.map(t => `<li>${escapar(t)}</li>`).join("") + "</ul>"
+    : `<p>${vazio}</p>`;
+
+  document.getElementById("relatorioAtual").innerHTML = `
+    <h3>Relatório diário — ${escapar(r.data)}</h3>
+    <p><strong>Total de tarefas:</strong> ${r.total}</p>
+    <p><strong>Concluídas:</strong> ${r.concluidas.length}</p>
+    ${lista(r.concluidas, "Nenhuma tarefa concluída.")}
+    <p><strong>Não concluídas:</strong> ${r.pendentes.length}</p>
+    ${lista(r.pendentes, "Todas as tarefas foram concluídas.")}
+    <p><strong>Transitadas de dias anteriores:</strong> ${r.transitadas.length}</p>
+    ${lista(r.transitadas, "Não existem tarefas transitadas.")}
+    <h3>Observações do dia</h3>
+    <p>${escapar(r.observacoes).replace(/\n/g, "<br>") || "Sem observações."}</p>
+    <h3>Assuntos a acompanhar no dia seguinte</h3>
+    <p>${escapar(r.acompanhar).replace(/\n/g, "<br>") || "Sem assuntos registados."}</p>
+  `;
+}
+
+function limparRelatorioApresentado() {
+  dados.relatorioApresentado = null;
+  guardar();
+  mostrarRelatorio(null);
+}
+
+function desenharHistorico() {
+  const zona = document.getElementById("listaHistorico");
+  zona.innerHTML = "";
+
+  const historico = dados.historico || [];
+
+  if (!historico.length) {
+    zona.innerHTML = '<p class="vazio">Ainda não existem relatórios guardados.</p>';
+    return;
+  }
+
+  historico.forEach(r => {
+    const item = document.createElement("div");
+    item.className = "item-historico";
+
+    const titulo = document.createElement("strong");
+    titulo.textContent = `Relatório de ${r.data}`;
+
+    const resumo = document.createElement("p");
+    resumo.textContent =
+      `${r.concluidas.length} concluídas | ${r.pendentes.length} pendentes`;
+
+    const ver = document.createElement("button");
+    ver.className = "pequeno secundario";
+    ver.textContent = "Ver relatório";
+    ver.onclick = () => {
+      dados.relatorioApresentado = r;
+      guardar();
+      mostrarRelatorio(r);
+      document.getElementById("areaRelatorio").scrollIntoView();
+    };
+
+    const apagar = document.createElement("button");
+    apagar.className = "pequeno perigo";
+    apagar.textContent = "Apagar";
+    apagar.onclick = () => {
+      if (!confirm("Queres apagar este relatório do histórico?")) return;
+      dados.historico = dados.historico.filter(x => x.id !== r.id);
+      if (dados.relatorioApresentado?.id === r.id) {
+        dados.relatorioApresentado = null;
+        mostrarRelatorio(null);
+      }
+      guardar();
+      desenharHistorico();
+    };
+
+    item.append(titulo, resumo, ver, apagar);
+    zona.appendChild(item);
+  });
+}
+
+function exportarDados() {
+  guardar();
+  const blob = new Blob(
+    [JSON.stringify(dados, null, 2)],
+    { type: "application/json" }
+  );
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "backup-checklist-" + dia + ".json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importarDados() {
+  document.getElementById("ficheiroImportar").click();
+}
+
+function lerImportacao(event) {
+  const ficheiro = event.target.files[0];
+  if (!ficheiro) return;
+
+  const leitor = new FileReader();
+  leitor.onload = () => {
+    try {
+      const importados = JSON.parse(leitor.result);
+      if (!confirm("A importação vai substituir os dados atuais. Continuar?")) return;
+      dados = importados;
+      inicializarDia();
+      document.getElementById("observacoes").value = dados.observacoes || "";
+      document.getElementById("acompanhar").value = dados.acompanhar || "";
+      atualizar();
+      mostrarRelatorio(dados.relatorioApresentado);
+      alert("Cópia de segurança importada.");
+    } catch {
+      alert("Não foi possível ler este ficheiro.");
+    }
+  };
+  leitor.readAsText(ficheiro);
+}
+
+inicializarDia();
+apresentarData();
+
+document.getElementById("observacoes").value = dados.observacoes || "";
+document.getElementById("acompanhar").value = dados.acompanhar || "";
+
+atualizar();
+mostrarRelatorio(dados.relatorioApresentado || null);
+</script>
+
+</body>
+</html>
